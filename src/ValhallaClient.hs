@@ -2,43 +2,46 @@
 {-# LANGUAGE DeriveGeneric     #-}
 {-# LANGUAGE OverloadedStrings #-}
 
-module ValhallaClient 
+module ValhallaClient
     ( fetchAndCalculateAverage
     , CalcResult
     ) where
 
-import GHC.Generics (Generic)
-import Data.Aeson (FromJSON(..), ToJSON(..), genericParseJSON, genericToJSON, defaultOptions, (.:), Value(..), Object)
-import Network.Wreq as Wreq (postWith, asJSON, defaults, header, responseBody, Response)
-import Control.Lens ((^.), (.~), (&))
-import Data.ByteString.Char8 as BS (pack)
-import Data.Maybe (mapMaybe)
-import Control.Exception (try, SomeException)
+import           Control.Exception     (SomeException, try)
+import           Control.Lens          ((&), (.~), (^.))
+import           Data.Aeson            (FromJSON (..), Object, ToJSON (..),
+                                        Value (..), defaultOptions,
+                                        genericParseJSON, genericToJSON, (.:))
+import           Data.ByteString.Char8 as BS (pack)
+import           Data.Maybe            (mapMaybe)
+import           GHC.Generics          (Generic)
+import           Network.Wreq          as Wreq (Response, asJSON, defaults,
+                                                header, postWith, responseBody)
 
 -- This is a universal datatype
 data Location = Location { lon :: Double, lat :: Double } deriving (Show, Generic, ToJSON)
 
--- These are for interfacinng with Valhalla
+-- These are for interfacing with Valhalla
 data MatrixRequest = MatrixRequest
     { sources :: [Location]
     , targets :: [Location]
     , costing :: String
-    , _id     :: String 
+    , _id     :: String
     } deriving (Show, Generic, ToJSON)
 
 data TargetResult = TargetResult { time :: Double, distance :: Double } deriving (Show, Generic)
 instance FromJSON TargetResult where
     parseJSON (Object v) = TargetResult <$> v .: "time" <*> v .: "distance"
-    parseJSON _ = fail "Expected an object for Target Result"
+    parseJSON _          = fail "Expected an object for Target Result"
 
-data MatrixResponse = MatrixResponse
+newtype MatrixResponse = MatrixResponse
     { sources_to_targets :: [[Maybe TargetResult]]
     } deriving (Show, Generic, FromJSON)
 
 
 -- This is the public result
-data CalcResult = CalcResult 
-    { routesFound :: Int
+data CalcResult = CalcResult
+    { routesFound    :: Int
     , routesNotFound :: Int
     , averageMinutes :: Double
     } deriving (Show, Generic)
@@ -55,13 +58,13 @@ fetchAndCalculateAverage = do
     let originPoint = [ Location { lon = -122.294, lat = 37.884 } ]
     let destinationPoints = [ Location { lon = -122.294 + (fromIntegral i * (-0.00001)), lat = (fromIntegral i * (0.0001)) } | i <- [1..5000] ]
 
-    let payload = MatrixRequest { 
+    let payload = MatrixRequest {
           sources = originPoint
         , targets = destinationPoints
         , costing = "auto"
         , _id = "bulk-query-5000"
         }
-    
+
     let opts = defaults & Wreq.header "Content-Type" .~ [BS.pack "application/json"]
 
     eResp <- try (Wreq.asJSON =<< Wreq.postWith opts url (toJSON payload)) :: IO (Either SomeException (Wreq.Response MatrixResponse))

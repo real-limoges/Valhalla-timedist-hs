@@ -1,0 +1,21 @@
+version: '3.8'
+
+services:
+  # this is *just* data processing batches
+  valhalla_build:
+    image: ghcr.io/valhalla/valhalla:latest-amd64
+    volumes:
+      - ./:/data
+      - ./valhalla_tiles:/valhalla_tiles
+
+  # this is the service
+  valhalla_service:
+    image: ghcr.io/valhalla/valhalla:latest-amd64
+    ports:
+      - "8002:8002"
+    volumes:
+      # read-only
+      - ./:/data:ro
+      - ./valhalla_tiles:/valhalla_tiles:ro
+    command: valhalla_service /data/valhalla.json 1
+    restart: unless-stopped

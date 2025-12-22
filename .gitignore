@@ -1,2 +1,6 @@
 .stack-work/
+valhalla_tiles/
+data/
+.idea/
+dist-newstyle/
 *~
