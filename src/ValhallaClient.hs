@@ -4,7 +4,6 @@
 
 module ValhallaClient
     ( fetchAndCalculateAverage
-    , CalcResult
     ) where
 
 import           Control.Exception     (SomeException, try)
@@ -17,41 +16,9 @@ import           Data.Maybe            (mapMaybe)
 import           GHC.Generics          (Generic)
 import           Network.Wreq          as Wreq (Response, asJSON, defaults,
                                                 header, postWith, responseBody)
-
--- This is a universal datatype
-data Location = Location { lon :: Double, lat :: Double } deriving (Show, Generic, ToJSON)
-
--- These are for interfacing with Valhalla
-data MatrixRequest = MatrixRequest
-    { sources :: [Location]
-    , targets :: [Location]
-    , costing :: String
-    , _id     :: String
-    } deriving (Show, Generic, ToJSON)
-
-data TargetResult = TargetResult { time :: Double, distance :: Double } deriving (Show, Generic)
-instance FromJSON TargetResult where
-    parseJSON (Object v) = TargetResult <$> v .: "time" <*> v .: "distance"
-    parseJSON _          = fail "Expected an object for Target Result"
-
-newtype MatrixResponse = MatrixResponse
-    { sources_to_targets :: [[Maybe TargetResult]]
-    } deriving (Show, Generic, FromJSON)
+import           Types
 
 
--- This is the public result
-data CalcResult = CalcResult
-    { routesFound    :: Int
-    , routesNotFound :: Int
-    , averageMinutes :: Double
-    } deriving (Show, Generic)
-instance ToJSON CalcResult where
-    toJSON = genericToJSON defaultOptions
-
-
--- This is our function we're calling
--- The return is an Either - Left is the String error, right is the CalcResult
--- This will accept parameters in the future
 fetchAndCalculateAverage :: IO (Either String CalcResult)
 fetchAndCalculateAverage = do
     let url = "http://localhost:8002/matrix"
