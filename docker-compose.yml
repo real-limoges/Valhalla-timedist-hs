@@ -1,21 +1,14 @@
-version: '3.8'
-
 services:
-  # this is *just* data processing batches
-  valhalla_build:
-    image: ghcr.io/valhalla/valhalla:latest-amd64
+  valhalla:
+    image: ghcr.io/valhalla/valhalla:3.6.1
+    container_name: valhalla_router
+    platform: linux/arm64
+    restart: always
+    shm_size: '2gb'
     volumes:
-      - ./:/data
-      - ./valhalla_tiles:/valhalla_tiles
-
-  # this is the service
-  valhalla_service:
-    image: ghcr.io/valhalla/valhalla:latest-amd64
+      - ./config/valhalla.json:/data/valhalla.json:ro
+      - ./data/valhalla_tiles/:/valhalla_tiles:ro
+      - ./data/admin.sqlite:/data/admin.sqlite:ro
     ports:
       - "8002:8002"
-    volumes:
-      # read-only
-      - ./:/data:ro
-      - ./valhalla_tiles:/valhalla_tiles:ro
-    command: valhalla_service /data/valhalla.json 1
-    restart: unless-stopped
+    command: valhalla_service /data/valhalla.json 2

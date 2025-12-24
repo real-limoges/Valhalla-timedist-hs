@@ -3,4 +3,5 @@ valhalla_tiles/
 data/
 .idea/
 dist-newstyle/
+.python-version
 *~

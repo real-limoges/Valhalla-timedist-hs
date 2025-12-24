@@ -6,17 +6,15 @@ module ValhallaClient
     ( fetchAndCalculateAverage
     ) where
 
-import           Control.Exception     (SomeException, try)
-import           Control.Lens          ((&), (.~), (^.))
-import           Data.Aeson            (FromJSON (..), Object, ToJSON (..),
-                                        Value (..), defaultOptions,
-                                        genericParseJSON, genericToJSON, (.:))
-import           Data.ByteString.Char8 as BS (pack)
-import           Data.Maybe            (mapMaybe)
-import           GHC.Generics          (Generic)
-import           Network.Wreq          as Wreq (Response, asJSON, defaults,
-                                                header, postWith, responseBody)
-import           Types
+import Control.Exception (SomeException, try)
+import Control.Lens ((&), (.~), (^.))
+import Data.Aeson (FromJSON (..), Object, ToJSON (..), Value (..), defaultOptions,
+                   genericParseJSON, genericToJSON, (.:))
+import Data.ByteString.Char8 as BS (pack)
+import Data.Maybe (mapMaybe)
+import GHC.Generics (Generic)
+import Network.Wreq as Wreq (Response, asJSON, defaults, header, postWith, responseBody)
+import ValhallaClient.Types
 
 
 fetchAndCalculateAverage :: IO (Either String CalcResult)
