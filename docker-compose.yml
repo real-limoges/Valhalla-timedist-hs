@@ -12,3 +12,19 @@ services:
     ports:
       - "8002:8002"
     command: valhalla_service /data/valhalla.json 2
+
+  valhalla-scotty:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: scotty_middleware
+    platform: linux/arm64
+    restart: always
+    depends_on:
+      - valhalla
+    ports:
+      - "3000:3000"
+    environment:
+      - VALHALLA_URL=http://valhalla:8002
+    volumes:
+      - ./app_config:/app/config:ro

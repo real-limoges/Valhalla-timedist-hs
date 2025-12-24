@@ -124,6 +124,7 @@
     "include_construction": false,
     "include_driveways": true,
     "include_driving": true,
+    "include_pedestrian": true,
     "include_platforms": false,
     "keep_all_osm_node_ids": false,
     "keep_osm_node_ids": false,
@@ -147,7 +148,7 @@
     "transit_pbf_limit": 20000,
     "use_lru_mem_cache": false,
     "use_simple_mem_cache": false,
-    "use_cached_hierarchy": true
+    "max_locations": 10000
   },
   "odin": {
     "logging": {
