@@ -1,16 +1,27 @@
-# --- Stage 1: Build --- #
-FROM haskell:9.10.1 AS builder
+FROM haskell:9.12.2 AS builder
 
 WORKDIR /opt/build
 
-RUN cabal update
+RUN --mount=type=cache,target=/root/.cabal/packages \
+    --mount=type=cache,target=/root/.cabal/store \
+    --mount=type=cache,target=/root/.cabal/index \
+    cabal v2-update
 
 COPY *.cabal cabal.project ./
-RUN cabal build --only-dependencies -j
+
+RUN --mount=type=cache,target=/root/.cabal/packages \
+    --mount=type=cache,target=/root/.cabal/store \
+    --mount=type=cache,target=/root/.cabal/index \
+    --mount=type=cache,target=/opt/build/dist-newstyle \
+    cabal build --only-dependencies -j
 
 COPY . .
 
-RUN cabal install --install-method=copy --installdir=./bin
+RUN --mount=type=cache,target=/root/.cabal/packages \
+    --mount=type=cache,target=/root/.cabal/store \
+    --mount=type=cache,target=/root/.cabal/index \
+    --mount=type=cache,target=/opt/build/dist-newstyle \
+    cabal install --install-method=copy --installdir=./bin
 
 # --- Stage 2: Runtime --- #
 FROM debian:bookworm-slim AS runtime
@@ -19,12 +30,12 @@ RUN apt-get update && apt-get install -y \
     libgmp10 \
     ca-certificates \
     libffi8 \
+    netbase \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
-
 COPY --from=builder /opt/build/bin/valhalla-timedist-hs-exe /app/valhalla-scotty
 
 EXPOSE 3000
-CMD ["/app/scotty-service"]
+CMD ["/app/valhalla-scotty"]

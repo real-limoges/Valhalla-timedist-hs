@@ -16,7 +16,7 @@ services:
   valhalla-scotty:
     build:
       context: .
-      dockerfile: Dockerfile
+      dockerfile: Dockerfile.scotty
     container_name: scotty_middleware
     platform: linux/arm64
     restart: always

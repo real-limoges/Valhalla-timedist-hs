@@ -1,0 +1,11 @@
+packages: .
+
+optimization: 2
+
+package *
+  debug-info: False
+
+package valhalla-scotty
+  documentation: False
+  ghc-options: -fllvm
+jobs: $ncpus
