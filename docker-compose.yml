@@ -13,11 +13,11 @@ services:
       - "8002:8002"
     command: valhalla_service /data/valhalla.json 2
 
-  valhalla-scotty:
+  valhalla-servant:
     build:
       context: .
-      dockerfile: Dockerfile.scotty
-    container_name: scotty_middleware
+      dockerfile: Dockerfile.servant
+    container_name: servant_middleware
     platform: linux/arm64
     restart: always
     depends_on:

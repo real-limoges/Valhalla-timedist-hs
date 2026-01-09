@@ -1,6 +1,3 @@
-{-# LANGUAGE GHC2024 #-}
-{-# LANGUAGE DeriveAnyClass #-}
-
 module Types where
 
 import Data.Aeson (FromJSON, ToJSON)

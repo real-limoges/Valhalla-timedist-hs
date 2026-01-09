@@ -1,4 +1,4 @@
-cabal-version: 3.12
+cabal-version:  3.12
 name:           valhalla-timedist-hs
 version:        0.1.0.0
 author:         Real Limoges
@@ -22,12 +22,11 @@ common shared-properties
       -Widentities
       -Wincomplete-record-updates
       -Wincomplete-uni-patterns
-      -Wmissing-export-lists
       -Wmissing-home-modules
       -Wpartial-fields
       -Wredundant-constraints
   build-depends:
-      base >= 4.21 && < 5
+      base >= 4.20 && < 5
     , aeson
     , bytestring
     , http-conduit
@@ -39,6 +38,8 @@ common shared-properties
     , mtl
   default-extensions:
     OverloadedStrings
+    DeriveAnyClass
+    GeneralizedNewtypeDeriving
 
 library
   import: shared-properties
