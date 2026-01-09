@@ -1,5 +1,4 @@
-cabal-version: 2.2
-
+cabal-version: 3.12
 name:           valhalla-timedist-hs
 version:        0.1.0.0
 author:         Real Limoges
@@ -14,76 +13,71 @@ source-repository head
   type: git
   location: https://github.com/real-limoges/valhalla-timedist-hs
 
+
+common shared-properties
+  default-language: GHC2024
+  ghc-options:
+      -Wall
+      -Wcompat
+      -Widentities
+      -Wincomplete-record-updates
+      -Wincomplete-uni-patterns
+      -Wmissing-export-lists
+      -Wmissing-home-modules
+      -Wpartial-fields
+      -Wredundant-constraints
+  build-depends:
+      base >= 4.21 && < 5
+    , aeson
+    , bytestring
+    , http-conduit
+    , text
+    , vector
+    , servant
+    , servant-server
+    , warp
+    , mtl
+  default-extensions:
+    OverloadedStrings
+
 library
+  import: shared-properties
   exposed-modules:
       Lib
       ValhallaClient
       Types
+      API.Api
+      API.Handlers
   other-modules:
       Paths_valhalla_timedist_hs
   autogen-modules:
       Paths_valhalla_timedist_hs
   hs-source-dirs:
       src
-  ghc-options: -Wall
-               -Wcompat
-               -Widentities
-               -Wincomplete-record-updates
-               -Wincomplete-uni-patterns
-               -Wmissing-export-lists
-               -Wmissing-home-modules
-               -Wpartial-fields
-               -Wredundant-constraints
-               -threaded
-               -rtsopts
-               -with-rtsopts=-N
   build-depends:
-      aeson
-    , base >=4.21 && <5
-    , bytestring
-    , http-conduit
-    , scotty
-    , text
-    , vector
-  default-language: GHC2024
+    , http-media
+    , cassava
+    , transformers
 
 executable valhalla-timedist-hs-exe
+  import: shared-properties
   main-is: Main.hs
   other-modules:
-      Lib
-      ValhallaClient
-      Types
       Paths_valhalla_timedist_hs
   autogen-modules:
       Paths_valhalla_timedist_hs
   hs-source-dirs:
       app
-      src
-  ghc-options: -O2
-               -Wall
-               -Wcompat
-               -Widentities
-               -Wincomplete-record-updates
-               -Wincomplete-uni-patterns
-               -Wmissing-export-lists
-               -Wmissing-home-modules
-               -Wpartial-fields
-               -Wredundant-constraints
-               -threaded
-               -rtsopts
-               -with-rtsopts=-N
+  ghc-options:
+      -threaded
+      -rtsopts
+      -with-rtsopts=-N
+      -O2
   build-depends:
-      aeson
-    , base >=4.21 && <5
-    , bytestring
-    , http-conduit
-    , scotty
-    , text
-    , valhalla-timedist-hs
-    , vector
-  default-language: GHC2024
+      valhalla-timedist-hs
 
 test-suite valhalla-timedist-hs-test
+  import: shared-properties
   type: exitcode-stdio-1.0
   main-is: Spec.hs
   other-modules:
@@ -92,25 +86,9 @@ test-suite valhalla-timedist-hs-test
       Paths_valhalla_timedist_hs
   hs-source-dirs:
       test
-  ghc-options: -Wall
-               -Wcompat
-               -Widentities
-               -Wincomplete-record-updates
-               -Wincomplete-uni-patterns
-               -Wmissing-export-lists
-               -Wmissing-home-modules
-               -Wpartial-fields
-               -Wredundant-constraints
-               -threaded
-               -rtsopts
-               -with-rtsopts=-N
+  ghc-options:
+      -threaded
+      -rtsopts
+      -with-rtsopts=-N
   build-depends:
-      aeson
-    , base >=4.21 && <5
-    , bytestring
-    , http-conduit
-    , scotty
-    , text
-    , valhalla-timedist-hs
-    , vector
-  default-language: GHC2024
+      valhalla-timedist-hs
