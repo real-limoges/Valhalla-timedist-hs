@@ -1,43 +1,43 @@
-{-# LANGUAGE GHC2024 #-}
-
-module ValhallaClient
-    ( fetchAndCalculateAverage
-    ) where
+module ValhallaClient (
+    fetchAndCalculateAverage,
+) where
 
 import Control.Exception (try)
 import Data.Function ((&))
 import Data.Maybe (catMaybes)
-import Network.HTTP.Simple
-    ( JSONException
-    , Response
-    , getResponseBody
-    , httpJSON
-    , parseRequest_
-    , setRequestBodyJSON
-    )
+import Network.HTTP.Simple (
+    JSONException,
+    Response,
+    getResponseBody,
+    httpJSON,
+    parseRequest_,
+    setRequestBodyJSON,
+ )
 import Types
 
 fetchAndCalculateAverage :: IO (Either String CalcResult)
 fetchAndCalculateAverage = do
     let url = "POST http://localhost:8002/matrix"
 
-    let originPoint = [ Location { lon = -122.294, lat = 37.884 } ]
+    let originPoint = [Location{lon = -122.294, lat = 37.884}]
     let destinationPoints =
             [ Location
                 { lon = -122.294 + (fromIntegral i * (-0.00001))
-                , lat = (fromIntegral i * 0.0001)
+                , lat = fromIntegral i * 0.0001
                 }
-            | i <- [1..5000]
+            | i <- [1 :: Int .. 5000]
             ]
 
-    let payload = MatrixRequest
-            { sources = originPoint
-            , targets = destinationPoints
-            , costing = "auto"
-            , _id = "bulk-query-5000"
-            }
+    let payload =
+            MatrixRequest
+                { sources = originPoint
+                , targets = destinationPoints
+                , costing = "auto"
+                , _id = "bulk-query-5000"
+                }
 
-    let request = parseRequest_ url
+    let request =
+            parseRequest_ url
                 & setRequestBodyJSON payload
 
     eResp <- try (httpJSON request) :: IO (Either JSONException (Response MatrixResponse))
@@ -61,8 +61,10 @@ fetchAndCalculateAverage = do
                         routesOK = length validDurations
                         routesFail = length destinationPoints - routesOK
 
-                    return $ Right $ CalcResult
-                        { routesFound = routesOK
-                        , routesNotFound = routesFail
-                        , averageMinutes = finalAvgMinutes
-                        }
+                    return $
+                        Right $
+                            CalcResult
+                                { routesFound = routesOK
+                                , routesNotFound = routesFail
+                                , averageMinutes = finalAvgMinutes
+                                }

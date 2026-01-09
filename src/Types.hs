@@ -1,5 +1,6 @@
 {-# LANGUAGE GHC2024 #-}
 {-# LANGUAGE DeriveAnyClass #-}
+
 module Types where
 
 import Data.Aeson (FromJSON, ToJSON)
@@ -17,7 +18,7 @@ data MatrixRequest = MatrixRequest
     { sources :: [Location]
     , targets :: [Location]
     , costing :: String
-    , _id     :: String
+    , _id :: String
     }
     deriving stock (Show, Generic)
     deriving anyclass (ToJSON)
@@ -37,7 +38,7 @@ newtype MatrixResponse = MatrixResponse
 
 -- This is the public result
 data CalcResult = CalcResult
-    { routesFound    :: Int
+    { routesFound :: Int
     , routesNotFound :: Int
     , averageMinutes :: Double
     }
