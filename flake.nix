@@ -4,78 +4,71 @@
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
     flake-utils.url = "github:numtide/flake-utils";
-    process-compose-flake.url = "github:Platonic-Systems/process-compose-flake";
   };
 
-  outputs = { self, nixpkgs, flake-utils, process-compose-flake, ... }:
+  outputs = { self, nixpkgs, flake-utils, ... }:
     flake-utils.lib.eachDefaultSystem (system:
       let
         pkgs = import nixpkgs {
           inherit system;
-          config.allowUnfree = true; # Valhalla might have unfree dependencies depending on version
+          config.allowUnfree = true;
         };
 
         haskellPackages = pkgs.haskell.packages.ghc910;
-
         myApp = haskellPackages.callCabal2nix "valhalla-timedist-hs" ./. {};
 
-      in {
-        # nix run (dev)
-        packages.default = process-compose-flake.lib.${system}.processCompose {
-          name = "valhalla-dev-env";
-          process-compose = {
-            processes = {
-              valhalla = {
-                command = "${pkgs.valhalla}/bin/valhalla_service config/valhalla.json 2";
-                working_dir = "./";
-                availability = {
-                  restart = "on_failure";
-                };
+        pcConfig = pkgs.writeText "process-compose.yaml" (builtins.toJSON {
+          version = "0.5";
+          processes = {
+            # Service 1: Valhalla (Docker)
+            valhalla = {
+              command = "docker run --rm --name valhalla_nix -p 8002:8002 -v $(pwd)/config:/config -v $(pwd)/data:/data ghcr.io/valhalla/valhalla:3.6.1 valhalla_service /config/valhalla.json 2";
+              availability = {
+                restart = "always";
               };
+            };
 
-              haskell-server = {
-                command = "${pkgs.cabal-install}/bin/cabal run exe:valhalla-timedist-hs-exe";
-                environment = [
-                  "VALHALLA_URL=http://localhost:8002"
-                ];
-                depends_on = {
-                  valhalla.condition = "process_healthy";
-                };
+            haskell-server = {
+              command = "${pkgs.cabal-install}/bin/cabal run exe:valhalla-timedist-hs-exe";
+              environment = [ "VALHALLA_URL=http://localhost:8002" ];
+              depends_on = {
+                valhalla.condition = "process_healthy";
               };
             };
           };
-        };
+        });
 
-        # nix build .#docker (production)
+      in {
+        packages.default = pkgs.writeShellScriptBin "start-dev" ''
+          # Ensure config exists or warn user
+          if [ ! -f ./config/valhalla.json ]; then
+            echo "Error: ./config/valhalla.json not found."
+            exit 1
+          fi
+
+          echo "Starting Valhalla & Haskell Environment..."
+          ${pkgs.process-compose}/bin/process-compose -f ${pcConfig}
+        '';
+
         packages.docker = pkgs.dockerTools.buildLayeredImage {
           name = "valhalla-timedist-hs";
           tag = "latest";
-          created = "now";
-
-          contents = [
-            pkgs.cacert       # SSL certs
-            pkgs.iana-etc     # Network protocols
-            myApp             # Your app
-          ];
-
+          contents = [ pkgs.cacert pkgs.iana-etc myApp ];
           config = {
             Cmd = [ "${myApp}/bin/valhalla-timedist-hs-exe" ];
-            ExposedPorts = { "3000/tcp" = {}; };
+            ExposedPorts = { "9000/tcp" = {}; };
             Env = [ "VALHALLA_URL=http://valhalla:8002" ];
           };
         };
 
-        # nix develop
         devShells.default = pkgs.mkShell {
           buildInputs = with pkgs; [
             cabal-install
             haskellPackages.ghc
             haskellPackages.haskell-language-server
-            pkgs.valhalla # So you can run valhalla CLI tools manually
             pkgs.zlib
+            pkgs.process-compose # So you can run 'process-compose' manually if you want
           ];
-
-          # Sets up library paths for GHC to find zlib/etc
           LD_LIBRARY_PATH = pkgs.lib.makeLibraryPath [ pkgs.zlib pkgs.gmp ];
         };
       }

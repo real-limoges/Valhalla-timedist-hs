@@ -1,4 +1,4 @@
-FROM haskell:9.10.3 AS builder
+FROM haskell:9.12.2 AS builder
 
 WORKDIR /opt/build
 
@@ -35,7 +35,7 @@ RUN apt-get update && apt-get install -y \
 
 WORKDIR /app
 
-COPY --from=builder /opt/build/bin/valhalla-timedist-hs-exe /app/valhalla-scotty
+COPY --from=builder /opt/build/bin/valhalla-timedist-hs-exe /app/valhalla-servant
 
-EXPOSE 3000
-CMD ["/app/valhalla-scotty"]
+EXPOSE 9000
+CMD ["/app/valhalla-servant"]

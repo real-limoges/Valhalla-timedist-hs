@@ -1,93 +1,66 @@
 module API.Handlers (
-    AppM (..),
     healthHandler,
-    fetchAndCalculateAverageHandler,
+    timeDistanceHandler,
+    maxPoints,
 ) where
 
-import Control.Exception (try)
-import Control.Monad.Except (MonadError)
-import Control.Monad.IO.Class (MonadIO, liftIO)
-import Data.Function ((&))
-import Data.Maybe (catMaybes)
-import Data.Text.Lazy qualified as TL
-import Data.Text.Lazy.Encoding qualified as TL
+import Control.Exception (SomeException, try)
+import Control.Monad (forM, when)
+import Control.Monad.IO.Class (liftIO)
+import Data.ByteString.Lazy.Char8 qualified as BL
+import Network.HTTP.Client (responseTimeoutMicro)
 import Network.HTTP.Simple (
-    JSONException,
     Response,
     getResponseBody,
     httpJSON,
     parseRequest_,
     setRequestBodyJSON,
+    setRequestResponseTimeout,
  )
-import Servant
+import Servant (Handler, ServerError (..), err400, err500, throwError)
 import Types
 
-newtype AppM a = AppM {unAppM :: Handler a}
-    deriving
-        ( Functor
-        , Applicative
-        , Monad
-        , MonadIO
-        , MonadError ServerError
-        )
+maxPoints :: Int
+maxPoints = 10000
 
-healthHandler :: AppM String
-healthHandler = return "Hello from a stateless AppM!"
+-- 30 second timeout for Valhalla requests
+requestTimeoutSeconds :: Int
+requestTimeoutSeconds = 30
 
--- Change signature: Return CalcResult directly, not Either
-fetchAndCalculateAverageHandler :: Double -> Double -> Int -> AppM CalcResult
-fetchAndCalculateAverageHandler sub_lon sub_lat count = do
-    let valhallaURL = "POST http://localhost:8002/matrix"
-    let originLoc = Location{lon = sub_lon, lat = sub_lat}
+healthHandler :: Handler String
+healthHandler = pure "OK"
 
-    let destinationPoints =
-            [ Location
-                { lon = -122.294 + (fromIntegral i * (-0.00001))
-                , lat = fromIntegral i * 0.0001
+timeDistanceHandler :: String -> TimeDistanceRequest -> Handler [CostingResult]
+timeDistanceHandler valhallaBaseUrl req = do
+    let numPoints = length (points req)
+        costingModels = costing req
+
+    when (null costingModels) $
+        throwError err400{errBody = "At least one costing model is required"}
+
+    when (numPoints > maxPoints) $
+        throwError err400{errBody = BL.pack $ "Too many points: " ++ show numPoints ++ " exceeds limit of " ++ show maxPoints}
+
+    forM costingModels $ \costingModel -> do
+        let valhallaURL = "POST " ++ valhallaBaseUrl ++ "/matrix"
+            payload = MatrixRequest
+                { sources = [subject req]
+                , targets = points req
+                , matrixCosting = costingToString costingModel
+                , _id = "time-distance-query"
                 }
-            | i <- [1 :: Int .. count]
-            ]
+            timeout = responseTimeoutMicro (requestTimeoutSeconds * 1000000)
+            request = setRequestResponseTimeout timeout
+                    $ setRequestBodyJSON payload
+                    $ parseRequest_ valhallaURL
 
-    let payload =
-            MatrixRequest
-                { sources = [originLoc]
-                , targets = destinationPoints
-                , costing = "auto"
-                , _id = "bulk-query"
-                }
+        eResp <- liftIO (try (httpJSON request) :: IO (Either SomeException (Response MatrixResponse)))
 
-    let request =
-            parseRequest_ valhallaURL
-                & setRequestBodyJSON payload
-
-    eResp <- liftIO (try (httpJSON request) :: IO (Either JSONException (Response MatrixResponse)))
-
-    case eResp of
-        -- Failure 1: HTTP/JSON connection error
-        Left ex ->
-            throwError $ err500{errBody = TL.encodeUtf8 (TL.pack $ show ex)}
-        Right r -> do
-            let respBody = getResponseBody r
-            let allResults = concat (sources_to_targets respBody)
-            let validTargets = catMaybes allResults
-            let validDurations = map time validTargets
-
-            if null validDurations
-                then
-                    -- Failure 2: Valid HTTP, but no routes found
-                    throwError $ err404{errBody = "No valid routes found."}
-                else do
-                    let totalDuration = sum validDurations
-                        avgSeconds = totalDuration / fromIntegral (length validDurations)
-                        finalAvgMinutes = avgSeconds / 60
-
-                        routesOK = length validDurations
-                        routesFail = length destinationPoints - routesOK
-
-                    -- Success: Return the value directly
-                    return $
-                        CalcResult
-                            { routesFound = routesOK
-                            , routesNotFound = routesFail
-                            , averageMinutes = finalAvgMinutes
-                            }
+        case eResp of
+            Left ex ->
+                throwError err500{errBody = BL.pack (show ex)}
+            Right r ->
+                pure CostingResult
+                    { costingModel = costingModel
+                    , results = concat $ sources_to_targets $ getResponseBody r
+                    }

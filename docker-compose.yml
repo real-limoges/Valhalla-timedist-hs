@@ -23,7 +23,7 @@ services:
     depends_on:
       - valhalla
     ports:
-      - "3000:3000"
+      - "9000:9000"
     environment:
       - VALHALLA_URL=http://valhalla:8002
     volumes:

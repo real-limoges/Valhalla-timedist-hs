@@ -45,7 +45,6 @@ library
   import: shared-properties
   exposed-modules:
       Lib
-      ValhallaClient
       Types
       API.Api
       API.Handlers
@@ -56,8 +55,8 @@ library
   hs-source-dirs:
       src
   build-depends:
+    , http-client
     , http-media
-    , cassava
     , transformers
 
 executable valhalla-timedist-hs-exe
@@ -83,6 +82,9 @@ test-suite valhalla-timedist-hs-test
   main-is: Spec.hs
   other-modules:
       Paths_valhalla_timedist_hs
+      MockValhalla
+      TypesSpec
+      API.HandlersSpec
   autogen-modules:
       Paths_valhalla_timedist_hs
   hs-source-dirs:
@@ -93,3 +95,9 @@ test-suite valhalla-timedist-hs-test
       -with-rtsopts=-N
   build-depends:
       valhalla-timedist-hs
+    , hspec
+    , hspec-wai
+    , http-types
+    , wai
+    , wai-extra
+    , network
