@@ -1,0 +1,32 @@
+# Large data files
+data/
+admin.sqlite
+
+# Build artifacts
+dist-newstyle/
+.stack-work/
+
+# Version control
+.git/
+
+# IDE and editor files
+.idea/
+.claude/
+*.swp
+*.swo
+
+# Python
+venv/
+__pycache__/
+*.pyc
+
+# Nix
+result
+result-*
+
+# macOS
+.DS_Store
+
+# Misc
+CLAUDE.md
+*.log

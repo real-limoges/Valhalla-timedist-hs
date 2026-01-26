@@ -42,7 +42,7 @@ timeDistanceHandler valhallaBaseUrl req = do
         throwError err400{errBody = BL.pack $ "Too many points: " ++ show numPoints ++ " exceeds limit of " ++ show maxPoints}
 
     forM costingModels $ \costingModel -> do
-        let valhallaURL = "POST " ++ valhallaBaseUrl ++ "/matrix"
+        let valhallaURL = "POST " ++ valhallaBaseUrl ++ "/sources_to_targets"
             payload = MatrixRequest
                 { sources = [subject req]
                 , targets = points req
