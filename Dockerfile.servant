@@ -33,9 +33,13 @@ RUN apt-get update && apt-get install -y \
     netbase \
     && rm -rf /var/lib/apt/lists/*
 
+RUN groupadd -r appuser && useradd -r -g appuser -d /app -s /sbin/nologin appuser
+
 WORKDIR /app
 
-COPY --from=builder /opt/build/bin/valhalla-timedist-hs-exe /app/valhalla-servant
+COPY --from=builder --chown=appuser:appuser /opt/build/bin/valhalla-timedist-hs-exe /app/valhalla-servant
+
+USER appuser
 
 EXPOSE 9000
 CMD ["/app/valhalla-servant"]

@@ -28,7 +28,9 @@ common shared-properties
   build-depends:
       base >= 4.20 && < 5
     , aeson
+    , async
     , bytestring
+    , http-client
     , http-conduit
     , text
     , vector
@@ -44,10 +46,16 @@ common shared-properties
 library
   import: shared-properties
   exposed-modules:
-      Lib
+      Logging
+      Server
       Types
+      Types.API
+      Types.Config
+      Types.Domain
+      Types.Valhalla
       API.Api
       API.Handlers
+      Valhalla.Client
   other-modules:
       Paths_valhalla_timedist_hs
   autogen-modules:
@@ -56,8 +64,13 @@ library
       src
   build-depends:
     , http-client
+    , http-client-tls
     , http-media
+    , http-types
+    , time
     , transformers
+    , wai
+    , wai-extra
 
 executable valhalla-timedist-hs-exe
   import: shared-properties
@@ -84,6 +97,7 @@ test-suite valhalla-timedist-hs-test
       Paths_valhalla_timedist_hs
       MockValhalla
       TypesSpec
+      PropSpec
       API.HandlersSpec
   autogen-modules:
       Paths_valhalla_timedist_hs
@@ -98,6 +112,7 @@ test-suite valhalla-timedist-hs-test
     , hspec
     , hspec-wai
     , http-types
+    , QuickCheck
     , wai
     , wai-extra
     , network

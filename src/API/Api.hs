@@ -1,23 +1,24 @@
 module API.Api (
     ValhallaAPI,
     apiProxy,
-    app,
     appWithConfig,
     serverWithConfig,
-    defaultValhallaUrl,
 ) where
 
 import API.Handlers (healthHandler, timeDistanceHandler)
+import Data.Text (Text)
 import Servant
-import Types (CostingResult, TimeDistanceRequest)
+import Types (AppConfig, CostingResult, TimeDistanceRequest)
 
-type ValhallaAPI =
+type ValhallaAPI = "v1" :> V1API
+
+type V1API =
     HealthEndpoint
         :<|> TimeDistanceEndpoint
 
 type HealthEndpoint =
     "health"
-        :> Get '[JSON] String
+        :> Get '[JSON] Text
 
 type TimeDistanceEndpoint =
     "time_distance"
@@ -27,16 +28,10 @@ type TimeDistanceEndpoint =
 apiProxy :: Proxy ValhallaAPI
 apiProxy = Proxy
 
-defaultValhallaUrl :: String
-defaultValhallaUrl = "http://localhost:8002"
+appWithConfig :: AppConfig -> Application
+appWithConfig config = serve apiProxy (serverWithConfig config)
 
-app :: Application
-app = appWithConfig defaultValhallaUrl
-
-appWithConfig :: String -> Application
-appWithConfig valhallaUrl = serve apiProxy (serverWithConfig valhallaUrl)
-
-serverWithConfig :: String -> Server ValhallaAPI
-serverWithConfig valhallaUrl =
-    healthHandler
-        :<|> timeDistanceHandler valhallaUrl
+serverWithConfig :: AppConfig -> Server ValhallaAPI
+serverWithConfig config =
+    healthHandler config
+        :<|> timeDistanceHandler config

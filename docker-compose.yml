@@ -2,29 +2,61 @@ services:
   valhalla:
     image: ghcr.io/valhalla/valhalla:3.6.1
     container_name: valhalla_router
-    platform: linux/arm64
     restart: always
     shm_size: '2gb'
+    deploy:
+      resources:
+        limits:
+          memory: 8G
+          cpus: "4"
     volumes:
       - ./config/valhalla.json:/data/valhalla.json:ro
       - ./data/valhalla_tiles/:/valhalla_tiles:ro
       - ./data/admin.sqlite:/data/admin.sqlite:ro
-    ports:
-      - "8002:8002"
+    expose:
+      - "8002"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8002/status || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 60s
+    read_only: true
+    security_opt:
+      - no-new-privileges:true
     command: valhalla_service /data/valhalla.json 2
+    logging:
+      driver: json-file
+      options:
+        max-size: "50m"
+        max-file: "5"
 
   valhalla-servant:
+    image: ghcr.io/real-limoges/valhalla-timedist-hs:${IMAGE_TAG:-latest}
     build:
       context: .
       dockerfile: Dockerfile.servant
     container_name: servant_middleware
-    platform: linux/arm64
     restart: always
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: "2"
     depends_on:
-      - valhalla
+      valhalla:
+        condition: service_healthy
     ports:
       - "9000:9000"
     environment:
       - VALHALLA_URL=http://valhalla:8002
     volumes:
       - ./app_config:/app/config:ro
+    read_only: true
+    security_opt:
+      - no-new-privileges:true
+    logging:
+      driver: json-file
+      options:
+        max-size: "50m"
+        max-file: "5"
