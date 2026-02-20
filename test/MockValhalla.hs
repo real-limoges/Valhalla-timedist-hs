@@ -10,11 +10,11 @@ import Control.Concurrent (forkIO, killThread)
 import Control.Concurrent.MVar (MVar, newEmptyMVar, putMVar, takeMVar)
 import Control.Exception (bracket)
 import Data.Aeson (encode)
-import Network.HTTP.Types (status200, status500)
+import Network.HTTP.Types (Status (..), status200)
 import Network.Wai (Application, responseLBS)
 import Network.Wai.Handler.Warp (Port, defaultSettings, openFreePort, runSettingsSocket, setBeforeMainLoop)
 import Network.Socket (close)
-import Types (MatrixResponse (..), TargetResult (..))
+import Types (MatrixResponse (..), Meters (..), Seconds (..), TargetResult (..))
 
 data MockResponse
     = SuccessResponse MatrixResponse
@@ -26,8 +26,8 @@ successResponse numTargets =
         { sources_to_targets =
             [ [ Just
                     TargetResult
-                        { time = 300.0
-                        , distance = 5000.0
+                        { time = Seconds 300.0
+                        , distance = Meters 5000.0
                         }
               | _ <- [1 .. numTargets]
               ]
@@ -41,7 +41,7 @@ partialResponse :: Int -> Int -> MatrixResponse
 partialResponse found notFound =
     MatrixResponse
         { sources_to_targets =
-            [ replicate found (Just TargetResult{time = 300.0, distance = 5000.0})
+            [ replicate found (Just TargetResult{time = Seconds 300.0, distance = Meters 5000.0})
                 ++ replicate notFound Nothing
             ]
         }
@@ -66,9 +66,9 @@ mockValhallaApp mockResp _req respond = do
                     status200
                     [("Content-Type", "application/json")]
                     (encode matrixResp)
-        ErrorResponse _ msg ->
+        ErrorResponse code msg ->
             respond $
                 responseLBS
-                    status500
+                    (Status code "")
                     [("Content-Type", "text/plain")]
                     (encode msg)
